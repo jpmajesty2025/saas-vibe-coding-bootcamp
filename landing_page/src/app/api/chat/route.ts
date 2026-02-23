@@ -1,0 +1,86 @@
+import { openai } from '@ai-sdk/openai';
+import { streamText, embed } from 'ai';
+import { z } from 'zod';
+import pool from '@/lib/db/client';
+
+export const runtime = 'nodejs';
+export const maxDuration = 30;
+
+const requestSchema = z.object({
+  messages: z.array(
+    z.object({
+      role: z.enum(['user', 'assistant']),
+      content: z.string().min(1).max(2000),
+    })
+  ).min(1).max(20),
+});
+
+interface DocumentRow {
+  content: string;
+  metadata: { title: string; source: string; chunk: number };
+  similarity: number;
+}
+
+async function getRelevantContext(query: string): Promise<string> {
+  const { embedding } = await embed({
+    model: openai.embedding('text-embedding-3-small'),
+    value: query,
+  });
+
+  const embeddingStr = `[${embedding.join(',')}]`;
+  const result = await pool.query<DocumentRow>(
+    `SELECT content, metadata,
+     1 - (embedding <=> $1::vector) AS similarity
+     FROM documents
+     WHERE 1 - (embedding <=> $1::vector) > 0.5
+     ORDER BY embedding <=> $1::vector
+     LIMIT 5`,
+    [embeddingStr]
+  );
+
+  if (result.rows.length === 0) return '';
+
+  return result.rows
+    .map((row, i) => `[Source ${i + 1}: ${row.metadata.title}]\n${row.content}`)
+    .join('\n\n---\n\n');
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { messages } = requestSchema.parse(body);
+
+    const latestUserMessage = messages[messages.length - 1].content;
+    const context = await getRelevantContext(latestUserMessage);
+
+    const systemPrompt = context
+      ? `You are VitalDocs AI, a clinical decision support assistant for US healthcare professionals.
+Your knowledge comes EXCLUSIVELY from the following CDC clinical guidelines.
+Answer questions accurately, concisely, and cite the source document when possible.
+
+CRITICAL RULES:
+1. ONLY answer using the provided context below.
+2. If the context does not contain enough information, respond EXACTLY with: "I cannot answer this based on the provided clinical guidelines. Please consult the full CDC guidelines at cdc.gov."
+3. Do NOT speculate, invent data, or use general knowledge outside this context.
+4. Always remind users that this is a clinical decision support tool, not a substitute for professional judgment.
+
+--- CLINICAL GUIDELINES CONTEXT ---
+${context}
+--- END OF CONTEXT ---`
+      : `You are VitalDocs AI. No relevant clinical guidelines were found for this query. Respond EXACTLY with: "I cannot answer this based on the provided clinical guidelines. Please consult the full CDC guidelines at cdc.gov."`;
+
+    const result = streamText({
+      model: openai('gpt-4o-mini'),
+      system: systemPrompt,
+      messages,
+    });
+
+    return result.toTextStreamResponse();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Response.json({ error: 'Invalid request', details: error.issues }, { status: 400 });
+    }
+    console.error('Chat API error:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
