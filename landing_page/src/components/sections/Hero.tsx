@@ -1,13 +1,42 @@
-import Image from "next/image";
+"use client";
+
+import { motion } from "framer-motion";
+import { Play } from "lucide-react";
 
 export default function Hero() {
+  // Animation configuration for staggered children
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { type: "spring", stiffness: 80, damping: 20 } 
+    }
+  };
+
   return (
-    <section className="max-w-7xl mx-auto px-6 pt-12 pb-24 grid lg:grid-cols-2 gap-12 items-center">
+    <section className="max-w-7xl mx-auto px-6 pt-12 pb-24 grid lg:grid-cols-2 gap-12 items-center overflow-hidden">
       
       {/* Left Column: Copy */}
-      <div className="max-w-xl">
+      <motion.div 
+        className="max-w-xl"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Rating Badge */}
-        <div className="flex items-center gap-2 mb-6">
+        <motion.div variants={itemVariants} className="flex items-center gap-2 mb-6">
           <div className="flex text-yellow-400">
             {[...Array(5)].map((_, i) => (
               <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
@@ -16,64 +45,70 @@ export default function Hero() {
             ))}
           </div>
           <span className="text-[#0D0D0D] font-medium text-[15px]">5.0 (980 Reviews)</span>
-        </div>
+        </motion.div>
 
         {/* Headline */}
-        <h1 className="text-[56px] font-medium leading-[64.4px] tracking-[-1.68px] text-[#0D0D0D] mb-6">
+        <motion.h1 variants={itemVariants} className="text-[56px] font-medium leading-[64.4px] tracking-[-1.68px] text-[#0D0D0D] mb-6">
           Instant Answers from Trusted Clinical Guidelines
-        </h1>
+        </motion.h1>
 
         {/* Subheadline */}
-        <p className="text-gray-600 text-[18px] leading-relaxed mb-10 max-w-lg">
+        <motion.p variants={itemVariants} className="text-gray-600 text-[18px] leading-relaxed mb-10 max-w-lg">
           Providing advanced healthcare AI solutions with a compassionate touch for every medical professional.
-        </p>
+        </motion.p>
 
         {/* CTA Group */}
-        <div className="flex flex-wrap items-center gap-4 mb-12">
+        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 mb-12">
           <button className="bg-[#4586FF] hover:bg-blue-600 text-white font-medium text-[16px] px-8 py-4 rounded-[80px] transition-colors">
             Get Started
           </button>
           <button className="flex items-center gap-3 text-[#0D0D0D] font-medium px-4 py-4 hover:opacity-80 transition-opacity">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-900">
+              <Play size={18} fill="currentColor" className="ml-1" />
             </div>
             Watch Video
           </button>
-        </div>
+        </motion.div>
 
         {/* Social Proof */}
-        <div className="flex items-center gap-4">
+        <motion.div variants={itemVariants} className="flex items-center gap-4">
           <div className="flex -space-x-4">
-             {/* Placeholders for avatar images */}
-            <div className="w-12 h-12 rounded-full border-2 border-white bg-gray-200" />
-            <div className="w-12 h-12 rounded-full border-2 border-white bg-gray-300" />
-            <div className="w-12 h-12 rounded-full border-2 border-white bg-gray-400" />
+            <img src="https://i.pravatar.cc/100?img=32" alt="User 1" className="w-12 h-12 rounded-full border-2 border-white object-cover" />
+            <img src="https://i.pravatar.cc/100?img=44" alt="User 2" className="w-12 h-12 rounded-full border-2 border-white object-cover" />
+            <img src="https://i.pravatar.cc/100?img=68" alt="User 3" className="w-12 h-12 rounded-full border-2 border-white object-cover" />
           </div>
           <div>
             <div className="font-medium text-[#0D0D0D]">5000+ Appointments</div>
             <div className="text-sm text-gray-500">Patients booked already</div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Right Column: Hero Image Container */}
-      <div className="relative w-full aspect-[3/4] max-h-[625px] bg-gray-100 rounded-[38px] overflow-hidden">
-        {/* We will use a placeholder Next Image here until we grab the actual asset */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, x: 20 }}
+        animate={{ opacity: 1, scale: 1, x: 0 }}
+        transition={{ duration: 0.8, type: "spring", bounce: 0.3, delay: 0.3 }}
+        className="relative w-full aspect-[3/4] max-h-[625px] bg-gray-100 rounded-[38px] overflow-hidden shadow-2xl"
+      >
         <img 
-          src="https://framerusercontent.com/images/RiukRfppKWATQjdvnvRv1Rm48.jpg?scale-down-to=1024" 
-          alt="Medical Professional"
+          src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=1024&auto=format&fit=crop" 
+          alt="Medical Professional using Tablet"
           className="w-full h-full object-cover"
         />
         
-        {/* Floating Badge (See All Templates from original, adapting to VitalDocs) */}
-        <div className="absolute bottom-6 right-6">
-          <button className="bg-[#4586FF] text-white font-medium text-sm px-6 py-3 rounded-[80px] shadow-lg">
+        {/* Floating Badge */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1, duration: 0.5 }}
+          className="absolute bottom-6 right-6"
+        >
+          <button className="bg-[#4586FF] text-white font-medium text-sm px-6 py-3 rounded-[80px] shadow-lg hover:bg-blue-600 transition-colors">
             See Documentation
           </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
     </section>
   );
