@@ -1,6 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, embed } from 'ai';
 import { z } from 'zod';
+import { auth } from '@clerk/nextjs/server';
 import pool from '@/lib/db/client';
 
 export const runtime = 'nodejs';
@@ -59,6 +60,11 @@ async function getRelevantContext(query: string): Promise<string> {
 }
 
 export async function POST(request: Request) {
+  const { userId } = await auth();
+  if (!userId) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { messages } = requestSchema.parse(body);
