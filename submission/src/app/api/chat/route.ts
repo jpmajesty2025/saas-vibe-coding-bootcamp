@@ -9,7 +9,7 @@ export const maxDuration = 30;
 
 const messagePartSchema = z.object({
   type: z.string(),
-  text: z.string().optional(),
+  text: z.string().max(2000).optional(),
 });
 
 const uiMessageSchema = z.object({
