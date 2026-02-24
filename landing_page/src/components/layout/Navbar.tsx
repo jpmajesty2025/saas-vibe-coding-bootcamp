@@ -62,6 +62,12 @@ export default function Navbar() {
         </SignedOut>
         <SignedIn>
           <Link
+            href="/dashboard"
+            className="text-[#0D0D0D] font-medium text-[15px] px-4 py-2 hover:text-gray-600 transition-colors"
+          >
+            Dashboard
+          </Link>
+          <Link
             href="/chat"
             className="bg-[#4586FF] hover:bg-blue-600 text-white font-medium text-[15px] px-[22px] py-[10px] rounded-[80px] transition-colors"
           >
