@@ -6,6 +6,7 @@ import { embedMany } from 'ai';
 // openai provider is created lazily inside main() after dotenv loads
 
 const SOURCES = [
+  // --- MMR: Measles, Mumps, Rubella ---
   {
     title: 'CDC Pink Book Chapter 13: Measles',
     url: 'https://www.cdc.gov/pinkbook/hcp/table-of-contents/chapter-13-measles.html',
@@ -31,6 +32,86 @@ const SOURCES = [
     url: 'https://www.cdc.gov/infection-control/hcp/healthcare-personnel-epidemiology-control/measles.html',
     type: 'html' as const,
   },
+  {
+    title: 'CDC Measles Vaccination Guidance',
+    url: 'https://www.cdc.gov/measles/hcp/vaccine-considerations/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Mumps Clinical Overview',
+    url: 'https://www.cdc.gov/mumps/hcp/clinical-overview/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Rubella Clinical Overview',
+    url: 'https://www.cdc.gov/rubella/hcp/clinical-overview/index.html',
+    type: 'html' as const,
+  },
+  // --- Pertussis (Whooping Cough) ---
+  {
+    title: 'CDC Pink Book Chapter 16: Pertussis',
+    url: 'https://www.cdc.gov/pinkbook/hcp/table-of-contents/chapter-16-pertussis.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Pertussis Clinical Overview',
+    url: 'https://www.cdc.gov/pertussis/hcp/clinical-overview/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Pertussis Vaccination Guidance',
+    url: 'https://www.cdc.gov/pertussis/vaccines/index.html',
+    type: 'html' as const,
+  },
+  // --- Influenza ---
+  {
+    title: 'CDC Influenza Antiviral Medications Clinical Guidance',
+    url: 'https://www.cdc.gov/flu/professionals/antivirals/antiviral-use-influenza.htm',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Clinical Description and Lab Diagnosis',
+    url: 'https://www.cdc.gov/flu/professionals/diagnosis/clinician_guidance_ridt.htm',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Vaccination Recommendations 2025-2026',
+    url: 'https://www.cdc.gov/flu/professionals/acip/2025-2026/summary-recommendations.htm',
+    type: 'html' as const,
+  },
+  // --- COVID-19 ---
+  {
+    title: 'CDC COVID-19 Clinical Care Overview',
+    url: 'https://www.cdc.gov/covid/hcp/clinical-care/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC COVID-19 Overview and Infection Prevention',
+    url: 'https://www.cdc.gov/covid/prevention/index.html',
+    type: 'html' as const,
+  },
+  // --- Immunization Schedules ---
+  {
+    title: 'CDC Child and Adolescent Immunization Schedule 2025',
+    url: 'https://www.cdc.gov/vaccines/hcp/imz-schedules/downloads/child/0-18yrs-child-combined-schedule.pdf',
+    type: 'pdf' as const,
+  },
+  {
+    title: 'CDC Adult Immunization Schedule 2025',
+    url: 'https://www.cdc.gov/vaccines/hcp/imz-schedules/adult.html',
+    type: 'html' as const,
+  },
+  // --- Current Outbreak Data 2025-2026 ---
+  {
+    title: 'CDC Measles Cases and Outbreaks 2025',
+    url: 'https://www.cdc.gov/measles/data-research/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Weekly Flu View 2025-2026 Season',
+    url: 'https://www.cdc.gov/flu/weekly/index.htm',
+    type: 'html' as const,
+  },
 ];
 
 const CHUNK_SIZE = 800;
@@ -45,6 +126,19 @@ function chunkText(text: string, chunkSize: number, overlap: number): string[] {
     start += chunkSize - overlap;
   }
   return chunks.filter((c) => c.length > 50);
+}
+
+/**
+ * Returns true if the chunk is readable English text.
+ * Rejects chunks where more than 5% of characters are non-ASCII,
+ * or where the chunk has fewer than 5 whitespace-separated words.
+ */
+function isReadableText(chunk: string): boolean {
+  const nonAscii = chunk.split('').filter((c) => c.charCodeAt(0) > 127).length;
+  if (nonAscii / chunk.length > 0.05) return false;
+  const wordCount = chunk.trim().split(/\s+/).length;
+  if (wordCount < 5) return false;
+  return true;
 }
 
 async function fetchAndExtractText(source: (typeof SOURCES)[0]): Promise<string> {
@@ -86,33 +180,45 @@ async function main() {
       TRUNCATE TABLE documents RESTART IDENTITY;
     `);
 
+    let totalChunks = 0;
+    let skipped = 0;
     for (const source of SOURCES) {
       log(`\nProcessing: ${source.title}`);
-      const text = await fetchAndExtractText(source);
-      const chunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP);
-      log(`  [OK] Extracted ${text.length} chars -> ${chunks.length} chunks`);
+      try {
+        const text = await fetchAndExtractText(source);
+        const rawChunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP);
+        const chunks = rawChunks.filter(isReadableText);
+        const filtered = rawChunks.length - chunks.length;
+        if (filtered > 0) log(`  [WARN] Dropped ${filtered} junk chunk(s) (non-ASCII or too short)`);
+        log(`  [OK] Extracted ${text.length} chars -> ${chunks.length} chunks`);
 
-      log(`  Generating embeddings via OpenAI...`);
-      const { embeddings } = await embedMany({
-        model: openai.embedding('text-embedding-3-small'),
-        values: chunks,
-      });
-      log(`  [OK] Generated ${embeddings.length} embeddings`);
+        log(`  Generating embeddings via OpenAI...`);
+        const { embeddings } = await embedMany({
+          model: openai.embedding('text-embedding-3-small'),
+          values: chunks,
+        });
+        log(`  [OK] Generated ${embeddings.length} embeddings`);
 
-      log(`  Storing in Postgres pgvector...`);
-      for (let i = 0; i < chunks.length; i++) {
-        const embeddingStr = `[${embeddings[i].join(',')}]`;
-        await client.query(
-          `INSERT INTO documents (content, metadata, embedding) VALUES ($1, $2, $3)`,
-          [
-            chunks[i],
-            JSON.stringify({ source: source.url, title: source.title, chunk: i }),
-            embeddingStr,
-          ]
-        );
+        log(`  Storing in Postgres pgvector...`);
+        for (let i = 0; i < chunks.length; i++) {
+          const embeddingStr = `[${embeddings[i].join(',')}]`;
+          await client.query(
+            `INSERT INTO documents (content, metadata, embedding) VALUES ($1, $2, $3)`,
+            [
+              chunks[i],
+              JSON.stringify({ source: source.url, title: source.title, chunk: i }),
+              embeddingStr,
+            ]
+          );
+        }
+        log(`  [OK] Stored ${chunks.length} document chunks`);
+        totalChunks += chunks.length;
+      } catch (err) {
+        log(`  [SKIP] Failed to process source: ${(err as Error).message}`);
+        skipped++;
       }
-      log(`  [OK] Stored ${chunks.length} document chunks`);
     }
+    log(`\n[SUMMARY] Processed ${SOURCES.length - skipped}/${SOURCES.length} sources, ${totalChunks} total chunks (${skipped} skipped).`);
 
     log('\n[DONE] Ingestion complete! Database is ready for RAG queries.');
   } finally {
