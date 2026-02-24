@@ -1,16 +1,25 @@
-import 'dotenv/config';
-// pdf-parse v2 ESM has no default export; require() is reliable in Node.js scripts
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse') as (data: Buffer) => Promise<{ text: string }>;
+// env loading is handled by src/lib/db/client.ts
 import pool from '../src/lib/db/client';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
+
+// openai provider is created lazily inside main() after dotenv loads
 
 const SOURCES = [
   {
-    title: 'CDC Pink Book: Measles, Mumps, and Rubella Vaccines (2024)',
-    url: 'https://www2.cdc.gov/vaccines/ed/pinkbook/2024/pb9/PB_MMR.pdf',
-    type: 'pdf' as const,
+    title: 'CDC Pink Book Chapter 13: Measles',
+    url: 'https://www.cdc.gov/pinkbook/hcp/table-of-contents/chapter-13-measles.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Pink Book Chapter 15: Mumps',
+    url: 'https://www.cdc.gov/pinkbook/hcp/table-of-contents/chapter-15-mumps.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Pink Book Chapter 20: Rubella',
+    url: 'https://www.cdc.gov/pinkbook/hcp/table-of-contents/chapter-20-rubella.html',
+    type: 'html' as const,
   },
   {
     title: 'CDC Clinical Overview of Measles',
@@ -39,14 +48,12 @@ function chunkText(text: string, chunkSize: number, overlap: number): string[] {
 }
 
 async function fetchAndExtractText(source: (typeof SOURCES)[0]): Promise<string> {
-  console.log(`  Fetching: ${source.url}`);
+  log(`  Fetching: ${source.url}`);
   const response = await fetch(source.url);
   if (!response.ok) throw new Error(`Failed to fetch ${source.url}: ${response.statusText}`);
 
   if (source.type === 'pdf') {
-    const arrayBuffer = await response.arrayBuffer();
-    const data = await pdfParse(Buffer.from(arrayBuffer));
-    return data.text;
+    throw new Error('PDF sources are not supported; use HTML sources only.');
   } else {
     const html = await response.text();
     const cheerio = await import('cheerio');
@@ -56,12 +63,18 @@ async function fetchAndExtractText(source: (typeof SOURCES)[0]): Promise<string>
   }
 }
 
+// Route all output to stderr to avoid Windows stdout EPIPE pipe issues
+const log = (...args: Parameters<typeof console.log>) => console.error(...args);
+
 async function main() {
-  console.log('🚀 Starting RAG ingestion pipeline...\n');
+  // Initialize openai provider here so env vars are guaranteed loaded by client.ts
+  const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  log('Starting RAG ingestion pipeline...\n');
 
   const client = await pool.connect();
   try {
-    console.log('📦 Ensuring documents table exists...');
+    log('Ensuring documents table exists and clearing any previous data...');
     await client.query(`
       CREATE EXTENSION IF NOT EXISTS vector;
       CREATE TABLE IF NOT EXISTS documents (
@@ -70,22 +83,23 @@ async function main() {
         metadata JSONB NOT NULL,
         embedding vector(1536) NOT NULL
       );
+      TRUNCATE TABLE documents RESTART IDENTITY;
     `);
 
     for (const source of SOURCES) {
-      console.log(`\n📄 Processing: ${source.title}`);
+      log(`\nProcessing: ${source.title}`);
       const text = await fetchAndExtractText(source);
       const chunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP);
-      console.log(`  ✓ Extracted ${text.length} chars → ${chunks.length} chunks`);
+      log(`  [OK] Extracted ${text.length} chars -> ${chunks.length} chunks`);
 
-      console.log(`  🔢 Generating embeddings via OpenAI...`);
+      log(`  Generating embeddings via OpenAI...`);
       const { embeddings } = await embedMany({
         model: openai.embedding('text-embedding-3-small'),
         values: chunks,
       });
-      console.log(`  ✓ Generated ${embeddings.length} embeddings`);
+      log(`  [OK] Generated ${embeddings.length} embeddings`);
 
-      console.log(`  💾 Storing in Postgres pgvector...`);
+      log(`  Storing in Postgres pgvector...`);
       for (let i = 0; i < chunks.length; i++) {
         const embeddingStr = `[${embeddings[i].join(',')}]`;
         await client.query(
@@ -97,10 +111,10 @@ async function main() {
           ]
         );
       }
-      console.log(`  ✓ Stored ${chunks.length} document chunks`);
+      log(`  [OK] Stored ${chunks.length} document chunks`);
     }
 
-    console.log('\n✅ Ingestion complete! Database is ready for RAG queries.');
+    log('\n[DONE] Ingestion complete! Database is ready for RAG queries.');
   } finally {
     client.release();
     await pool.end();
@@ -108,6 +122,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('❌ Ingestion failed:', err);
+  console.error('[ERROR] Ingestion failed:', err);
   process.exit(1);
 });

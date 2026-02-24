@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ingest": "tsx scripts/ingest.ts",
-    "test:rag": "tsx scripts/test-rag.ts"
+    "ingest": "npx tsx scripts/ingest.ts",
+    "test:rag": "npx tsx scripts/test-rag.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.30",
