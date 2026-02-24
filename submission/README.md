@@ -22,7 +22,7 @@ A standalone Node.js/TSX script that:
 5. Generates embeddings with **OpenAI `text-embedding-3-small`**
 6. Stores embeddings in **Postgres + pgvector** (Neon Serverless)
 
-Currently indexed: **1,155+ clean chunks** across 27 sources.
+Currently indexed: **717 clean chunks** across 15 sources.
 
 ### Chat API (`src/app/api/chat/route.ts`)
 A streaming REST endpoint (`POST /api/chat`) that:
