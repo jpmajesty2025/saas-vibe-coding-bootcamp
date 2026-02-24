@@ -2,6 +2,7 @@
 
 import { motion, type Variants } from "framer-motion";
 import { Play } from "lucide-react";
+import Link from "next/link";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -58,9 +59,9 @@ export default function Hero() {
 
         {/* CTA Group */}
         <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 mb-12">
-          <button className="bg-[#4586FF] hover:bg-blue-600 text-white font-medium text-[16px] px-8 py-4 rounded-[80px] transition-colors">
+          <Link href="/chat" className="bg-[#4586FF] hover:bg-blue-600 text-white font-medium text-[16px] px-8 py-4 rounded-[80px] transition-colors">
             Get Started
-          </button>
+          </Link>
           <button className="flex items-center gap-3 text-[#0D0D0D] font-medium px-4 py-4 hover:opacity-80 transition-opacity">
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-900">
               <Play size={18} fill="currentColor" className="ml-1" />

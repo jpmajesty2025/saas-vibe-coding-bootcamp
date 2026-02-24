@@ -65,18 +65,53 @@ const SOURCES = [
   },
   // --- Influenza ---
   {
-    title: 'CDC Influenza Antiviral Medications Clinical Guidance',
-    url: 'https://www.cdc.gov/flu/professionals/antivirals/antiviral-use-influenza.htm',
+    title: 'CDC Influenza Signs and Symptoms',
+    url: 'https://www.cdc.gov/flu/signs-symptoms/index.html',
     type: 'html' as const,
   },
   {
-    title: 'CDC Influenza Clinical Description and Lab Diagnosis',
-    url: 'https://www.cdc.gov/flu/professionals/diagnosis/clinician_guidance_ridt.htm',
+    title: 'CDC Influenza Clinical Signs for HCP',
+    url: 'https://www.cdc.gov/flu/hcp/clinical-signs/index.html',
     type: 'html' as const,
   },
   {
-    title: 'CDC Influenza Vaccination Recommendations 2025-2026',
-    url: 'https://www.cdc.gov/flu/professionals/acip/2025-2026/summary-recommendations.htm',
+    title: 'CDC Influenza Antiviral Medications Summary for Clinicians',
+    url: 'https://www.cdc.gov/flu/hcp/antivirals/summary-clinicians.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Antiviral Medications Overview',
+    url: 'https://www.cdc.gov/flu/hcp/antivirals/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Testing Guidance for Clinicians',
+    url: 'https://www.cdc.gov/flu/hcp/testing-methods/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Testing Guidance for Clinicians (Outpatient)',
+    url: 'https://www.cdc.gov/flu/hcp/clinical-guidance/testing-guidance-for-clinicians.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Vaccine Recommendations for HCP',
+    url: 'https://www.cdc.gov/flu/hcp/vax-summary/flu-vaccine-recommendation.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza ACIP Vaccine Recommendations',
+    url: 'https://www.cdc.gov/flu/hcp/acip/index.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Infection Control in Healthcare Settings',
+    url: 'https://www.cdc.gov/flu/hcp/infection-control/healthcare-settings.html',
+    type: 'html' as const,
+  },
+  {
+    title: 'CDC Influenza Clinical Guidance Overview for HCP',
+    url: 'https://www.cdc.gov/flu/hcp/clinical-guidance/index.html',
     type: 'html' as const,
   },
   // --- COVID-19 ---
@@ -93,8 +128,8 @@ const SOURCES = [
   // --- Immunization Schedules ---
   {
     title: 'CDC Child and Adolescent Immunization Schedule 2025',
-    url: 'https://www.cdc.gov/vaccines/hcp/imz-schedules/downloads/child/0-18yrs-child-combined-schedule.pdf',
-    type: 'pdf' as const,
+    url: 'https://www.cdc.gov/vaccines/hcp/imz-schedules/child-adolescent.html',
+    type: 'html' as const,
   },
   {
     title: 'CDC Adult Immunization Schedule 2025',
@@ -108,8 +143,8 @@ const SOURCES = [
     type: 'html' as const,
   },
   {
-    title: 'CDC Weekly Flu View 2025-2026 Season',
-    url: 'https://www.cdc.gov/flu/weekly/index.htm',
+    title: 'CDC FluView Weekly Influenza Surveillance',
+    url: 'https://www.cdc.gov/fluview/index.html',
     type: 'html' as const,
   },
 ];

@@ -6,19 +6,32 @@ import pool from '@/lib/db/client';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
+const messagePartSchema = z.object({
+  type: z.string(),
+  text: z.string().optional(),
+});
+
+const uiMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(['user', 'assistant', 'system']),
+  parts: z.array(messagePartSchema),
+});
+
 const requestSchema = z.object({
-  messages: z.array(
-    z.object({
-      role: z.enum(['user', 'assistant']),
-      content: z.string().min(1).max(2000),
-    })
-  ).min(1).max(20),
+  messages: z.array(uiMessageSchema).min(1).max(20),
 });
 
 interface DocumentRow {
   content: string;
   metadata: { title: string; source: string; chunk: number };
   similarity: number;
+}
+
+function extractText(parts: Array<{ type: string; text?: string }>): string {
+  return parts
+    .filter((p) => p.type === 'text' && p.text)
+    .map((p) => p.text!)
+    .join('');
 }
 
 async function getRelevantContext(query: string): Promise<string> {
@@ -50,8 +63,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { messages } = requestSchema.parse(body);
 
-    const latestUserMessage = messages[messages.length - 1].content;
-    const context = await getRelevantContext(latestUserMessage);
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    if (!lastUserMessage) {
+      return Response.json({ error: 'No user message found' }, { status: 400 });
+    }
+
+    const latestUserText = extractText(lastUserMessage.parts);
+    if (!latestUserText) {
+      return Response.json({ error: 'Empty user message' }, { status: 400 });
+    }
+
+    const context = await getRelevantContext(latestUserText);
 
     const systemPrompt = context
       ? `You are VitalDocs AI, a clinical decision support assistant for US healthcare professionals.
@@ -69,13 +91,21 @@ ${context}
 --- END OF CONTEXT ---`
       : `You are VitalDocs AI. No relevant clinical guidelines were found for this query. Respond EXACTLY with: "I cannot answer this based on the provided clinical guidelines. Please consult the full CDC guidelines at cdc.gov."`;
 
+    const coreMessages = messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: extractText(m.parts),
+      }))
+      .filter((m) => m.content.length > 0);
+
     const result = streamText({
       model: openai('gpt-4o-mini'),
       system: systemPrompt,
-      messages,
+      messages: coreMessages,
     });
 
-    return result.toTextStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: 'Invalid request', details: error.issues }, { status: 400 });

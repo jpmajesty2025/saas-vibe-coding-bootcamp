@@ -105,11 +105,12 @@ CDC sources currently ingested:
 - [ ] **Replace placeholder social proof copy** in Hero — "5000+ Appointments / Patients booked already" is a generic template; update to match the clinical SaaS brand (e.g. CDC documents indexed count)
 
 ### 🟡 Feature: Chat UI
-- [ ] Build the chat interface page at `/chat` (the destination for all hero CTAs)
-- [ ] Wire the hero "Get Started" button → `/chat` (primary CTA, currently unwired)
-- [ ] Implement streaming message display with a skeleton loader / "thinking" state
-- [ ] Add citation pill badges on AI responses (e.g. `[CDC: Measles Pink Book]`) as specified in the design proposal
-- [ ] "View Example Queries" CTA — populate with pre-canned demo questions and link to `/chat` with a pre-filled query
+- [x] Build the chat interface page at `/chat`
+- [x] Wire the hero "Get Started" button → `/chat`
+- [x] Implement streaming message display with animated thinking dots
+- [x] Add citation pill badges on AI responses (`[CDC: ...]`)
+- [x] Pre-canned example queries on empty state
+- [ ] Auto-submit when clicking an example query (currently populates input, requires Send)
 
 ### 🟡 Feature: Landing Page Completion
 - [ ] Wire up all Navbar links (About, Services, Doctors, Blog — or replace with product-appropriate links)
@@ -125,5 +126,5 @@ CDC sources currently ingested:
 - [ ] Consider adding WHO sources to expand the knowledge base
 - [ ] Set up CI to re-run ingestion when source list changes
 - [ ] Add error monitoring (Sentry or similar)
-- [ ] Deploy to Vercel
+- [x] Deploy to Vercel — **live at https://vitaldocs-ai.vercel.app/**
 <END_OF_CONTENT>}}]
