@@ -2,9 +2,9 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Activity, ArrowLeft, Stethoscope } from "lucide-react";
+import { Send, Activity, ArrowLeft, Stethoscope, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 
 const EXAMPLE_QUERIES = [
@@ -15,16 +15,77 @@ const EXAMPLE_QUERIES = [
   "What are the clinical features that distinguish pertussis from other respiratory illnesses?",
 ];
 
-interface CitationBadgeProps {
-  label: string;
+interface SourceResult {
+  title: string;
+  url: string;
+  snippet: string;
+  similarity: number;
 }
 
-function CitationBadge({ label }: CitationBadgeProps) {
+interface ActiveCitation {
+  messageId: string;
+  title: string;
+}
+
+interface CitationBadgeProps {
+  label: string;
+  messageId: string;
+  sources: SourceResult[];
+  activeCitation: ActiveCitation | null;
+  onToggle: (messageId: string, title: string) => void;
+}
+
+function CitationBadge({ label, messageId, sources, activeCitation, onToggle }: CitationBadgeProps) {
+  const source = sources.find((s) => s.title === label);
+  const isActive = activeCitation?.messageId === messageId && activeCitation?.title === label;
+  const hasSource = Boolean(source);
+
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200 mx-0.5 whitespace-nowrap">
+    <button
+      onClick={() => hasSource && onToggle(messageId, label)}
+      disabled={!hasSource}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border mx-0.5 whitespace-nowrap transition-colors ${
+        hasSource
+          ? isActive
+            ? "bg-teal-600 text-white border-teal-600 cursor-pointer"
+            : "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100 cursor-pointer"
+          : "bg-teal-50 text-teal-700 border-teal-200 cursor-default"
+      }`}
+    >
       <Stethoscope size={10} />
       {label}
-    </span>
+      {hasSource && (isActive ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+    </button>
+  );
+}
+
+interface SourceCardProps {
+  source: SourceResult;
+}
+
+function SourceCard({ source }: SourceCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+      transition={{ duration: 0.15 }}
+      className="mt-2 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs text-slate-700 shadow-sm"
+    >
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <span className="font-semibold text-teal-800 leading-snug">{source.title}</span>
+        <span className="shrink-0 text-teal-600 font-medium">{source.similarity}% match</span>
+      </div>
+      <p className="leading-relaxed text-slate-600 mb-2">{source.snippet}…</p>
+      <a
+        href={source.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-teal-700 hover:text-teal-900 font-medium transition-colors"
+      >
+        View on CDC <ExternalLink size={10} />
+      </a>
+    </motion.div>
   );
 }
 
@@ -71,6 +132,11 @@ export default function ChatInterface() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showExamples, setShowExamples] = useState(true);
 
+  const [sourcesMap, setSourcesMap] = useState<Map<string, SourceResult[]>>(new Map());
+  const [activeCitation, setActiveCitation] = useState<ActiveCitation | null>(null);
+  const lastUserQueryRef = useRef<string>("");
+  const prevStatusRef = useRef<string>(status);
+
   const isLoading = status === "submitted" || status === "streaming";
 
   useEffect(() => {
@@ -81,6 +147,41 @@ export default function ChatInterface() {
     if (messages.length > 0) setShowExamples(false);
   }, [messages.length]);
 
+  const fetchSources = useCallback(async (query: string, messageId: string) => {
+    try {
+      const res = await fetch("/api/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.sources?.length) {
+        setSourcesMap((prev) => new Map(prev).set(messageId, data.sources));
+      }
+    } catch {
+    }
+  }, []);
+
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = status;
+
+    if (prevStatus === "streaming" && status === "ready") {
+      const assistantMessages = messages.filter((m) => m.role === "assistant");
+      const lastAssistant = assistantMessages[assistantMessages.length - 1];
+      if (lastAssistant && lastUserQueryRef.current) {
+        fetchSources(lastUserQueryRef.current, lastAssistant.id);
+      }
+    }
+  }, [status, messages, fetchSources]);
+
+  function handleToggleCitation(messageId: string, title: string) {
+    setActiveCitation((prev) =>
+      prev?.messageId === messageId && prev?.title === title ? null : { messageId, title }
+    );
+  }
+
   function handleExampleClick(query: string) {
     setInput(query);
     inputRef.current?.focus();
@@ -89,6 +190,8 @@ export default function ChatInterface() {
   function submit() {
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
+    lastUserQueryRef.current = trimmed;
+    setActiveCitation(null);
     sendMessage({ text: trimmed });
     setInput("");
   }
@@ -114,7 +217,7 @@ export default function ChatInterface() {
         <div className="h-4 w-px bg-slate-200" />
         <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <Activity size={15} className="text-teal-600" />
-          CDC Clinical Guidelines — MMR, Pertussis, COVID-19
+          CDC Clinical Guidelines — MMR, Pertussis, Influenza, COVID-19
         </div>
         <span className="ml-auto text-xs text-slate-400 hidden sm:block">
           Powered by VitalDocs AI · For healthcare professionals
@@ -123,7 +226,6 @@ export default function ChatInterface() {
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
-        {/* Empty state */}
         <AnimatePresence>
           {showExamples && messages.length === 0 && (
             <motion.div
@@ -156,13 +258,20 @@ export default function ChatInterface() {
           )}
         </AnimatePresence>
 
-        {/* Message list */}
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.map((message) => {
             const textContent = message.parts
               .filter((p) => p.type === "text")
               .map((p) => (p as { type: "text"; text: string }).text)
               .join("");
+            const msgSources = sourcesMap.get(message.id) ?? [];
+            const parsedParts = message.role === "assistant" ? parseMessageContent(textContent) : null;
+
+            const activeCitationTitle =
+              activeCitation?.messageId === message.id ? activeCitation.title : null;
+            const activeSource = activeCitationTitle
+              ? msgSources.find((s) => s.title === activeCitationTitle) ?? null
+              : null;
 
             return (
               <motion.div
@@ -170,35 +279,52 @@ export default function ChatInterface() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
               >
-                {message.role === "assistant" && (
-                  <div className="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center text-white shrink-0 mr-2 mt-0.5">
-                    <Activity size={13} strokeWidth={2.5} />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    message.role === "user"
-                      ? "bg-[#4586FF] text-white rounded-tr-sm"
-                      : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm"
-                  }`}
-                >
-                  {message.role === "assistant"
-                    ? parseMessageContent(textContent).map((part, i) =>
-                        part.type === "citation" ? (
-                          <CitationBadge key={i} label={part.value} />
-                        ) : (
-                          <span key={i}>{part.value}</span>
+                <div className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} w-full`}>
+                  {message.role === "assistant" && (
+                    <div className="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center text-white shrink-0 mr-2 mt-0.5">
+                      <Activity size={13} strokeWidth={2.5} />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                      message.role === "user"
+                        ? "bg-[#4586FF] text-white rounded-tr-sm"
+                        : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm"
+                    }`}
+                  >
+                    {message.role === "assistant" && parsedParts
+                      ? parsedParts.map((part, i) =>
+                          part.type === "citation" ? (
+                            <CitationBadge
+                              key={i}
+                              label={part.value}
+                              messageId={message.id}
+                              sources={msgSources}
+                              activeCitation={activeCitation}
+                              onToggle={handleToggleCitation}
+                            />
+                          ) : (
+                            <span key={i}>{part.value}</span>
+                          )
                         )
-                      )
-                    : textContent}
+                      : textContent}
+                  </div>
                 </div>
+
+                {/* Source card — shown below the bubble */}
+                <AnimatePresence>
+                  {activeSource && (
+                    <div className={`w-full max-w-[85%] mt-1 ${message.role === "assistant" ? "ml-9" : ""}`}>
+                      <SourceCard source={activeSource} />
+                    </div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             );
           })}
 
-          {/* Thinking indicator */}
           {isLoading && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -227,7 +353,7 @@ export default function ChatInterface() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a clinical question about MMR, Pertussis, COVID-19..."
+              placeholder="Ask a clinical question about MMR, Pertussis, Influenza, COVID-19..."
               rows={1}
               disabled={isLoading}
               className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-400 disabled:opacity-60 transition-colors max-h-40 overflow-y-auto"
