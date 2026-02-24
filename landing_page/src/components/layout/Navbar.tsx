@@ -6,6 +6,7 @@ import { Activity } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "Chat", href: "/chat" },
+  { label: "Pricing", href: "/#pricing" },
   { label: "CDC Guidelines", href: "https://www.cdc.gov", external: true },
 ];
 
@@ -48,7 +49,7 @@ export default function Navbar() {
         href="/chat"
         className="bg-[#4586FF] hover:bg-blue-600 text-white font-medium text-[15px] px-[22px] py-[10px] rounded-[80px] transition-colors"
       >
-        Ask a Question
+        Start Free Trial
       </Link>
     </motion.nav>
   );

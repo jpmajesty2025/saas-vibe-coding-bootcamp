@@ -62,7 +62,7 @@ export default function Hero() {
         {/* CTA Group */}
         <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 mb-12">
           <Link href="/chat" className="bg-[#4586FF] hover:bg-blue-600 text-white font-medium text-[16px] px-8 py-4 rounded-[80px] transition-colors">
-            Ask a Clinical Question
+            Start Free Trial
           </Link>
           <Link
             href="https://www.cdc.gov"
