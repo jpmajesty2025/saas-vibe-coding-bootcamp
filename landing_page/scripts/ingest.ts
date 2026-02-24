@@ -181,15 +181,11 @@ async function fetchAndExtractText(source: (typeof SOURCES)[0]): Promise<string>
   const response = await fetch(source.url);
   if (!response.ok) throw new Error(`Failed to fetch ${source.url}: ${response.statusText}`);
 
-  if (source.type === 'pdf') {
-    throw new Error('PDF sources are not supported; use HTML sources only.');
-  } else {
-    const html = await response.text();
-    const cheerio = await import('cheerio');
-    const $ = cheerio.load(html);
-    $('nav, footer, header, script, style, .nav, .footer, .header').remove();
-    return $('main, article, .content, body').text().replace(/\s+/g, ' ').trim();
-  }
+  const html = await response.text();
+  const cheerio = await import('cheerio');
+  const $ = cheerio.load(html);
+  $('nav, footer, header, script, style, .nav, .footer, .header').remove();
+  return $('main, article, .content, body').text().replace(/\s+/g, ' ').trim();
 }
 
 // Route all output to stderr to avoid Windows stdout EPIPE pipe issues
