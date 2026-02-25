@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { ShieldCheck, BookOpen } from "lucide-react";
+import { ShieldCheck, Play } from "lucide-react";
 import Link from "next/link";
 
 const containerVariants: Variants = {
@@ -64,17 +64,17 @@ export default function Hero() {
           <Link href="/chat" className="bg-[#4586FF] hover:bg-blue-600 text-white font-medium text-[16px] px-8 py-4 rounded-[80px] transition-colors">
             Start Free Trial
           </Link>
-          <Link
-            href="https://www.cdc.gov"
+          <a
+            href="https://www.loom.com/share/2ae15318132743afbb00c4014f557b5d"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 text-[#0D0D0D] font-medium px-4 py-4 hover:opacity-80 transition-opacity"
           >
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-900">
-              <BookOpen size={18} />
+              <Play size={18} />
             </div>
-            Browse CDC Sources
-          </Link>
+            Watch Demo
+          </a>
         </motion.div>
 
         {/* Stats Row */}

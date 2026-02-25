@@ -6,6 +6,7 @@ import { Activity } from "lucide-react";
 import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/nextjs";
 
 const NAV_LINKS = [
+  { label: "Demo", href: "/demo" },
   { label: "Chat", href: "/chat" },
   { label: "Pricing", href: "/#pricing" },
   { label: "CDC Guidelines", href: "https://www.cdc.gov", external: true },
