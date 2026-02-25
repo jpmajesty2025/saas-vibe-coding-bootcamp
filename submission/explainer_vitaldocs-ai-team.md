@@ -26,6 +26,10 @@
 
 **Live Deployment URL:** https://vitaldocs-ai.vercel.app
 
+**Public Demo (no sign-in):** https://vitaldocs-ai.vercel.app/demo
+
+**Demo Video (Loom):** https://www.loom.com/share/2ae15318132743afbb00c4014f557b5d
+
 **GitHub Repository URL:** https://github.com/jpmajesty2025/saas-vibe-coding-bootcamp
 
 ---
