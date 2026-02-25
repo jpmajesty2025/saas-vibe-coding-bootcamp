@@ -51,9 +51,27 @@ Healthcare professionals waste valuable time manually searching through dense CD
 | Route | Description |
 |-------|-------------|
 | `/` | Landing page with hero, stats, and pricing |
+| `/demo` | **Public demo — no sign-in required** (for judges/evaluators) |
 | `/sign-in` | Clerk-powered sign-in (custom domain) |
 | `/sign-up` | Clerk-powered sign-up |
 | `/chat` | Protected RAG chat UI with citation badges |
 | `/dashboard` | Protected user dashboard (usage, coverage, history) |
-| `/api/chat` | Streaming RAG API (Next.js Route Handler) |
-| `/api/sources` | Citation source lookup API |
+| `/api/chat` | Streaming RAG API — requires Clerk auth (server-side guard) |
+| `/api/sources` | Citation source lookup API — requires Clerk auth |
+| `/api/demo-chat` | Public streaming RAG API for demo route (no auth) |
+| `/api/demo-sources` | Public citation lookup for demo route (no auth) |
+| `/api/health` | Health check: returns DB status + chunk count |
+
+---
+
+## Judge / Evaluator Access
+
+To verify the app without creating an account:
+
+1. Visit **https://vitaldocs-ai.vercel.app/demo**
+2. Click any suggested clinical question or type your own
+3. Observe the streamed, cited answer grounded in CDC guidelines
+
+The `/demo` route uses dedicated unauthenticated API routes (`/api/demo-chat` and `/api/demo-sources`) so evaluators can test the full RAG pipeline without signing in.
+
+**Health check:** https://vitaldocs-ai.vercel.app/api/health — returns JSON with `{ status, chunkCount, sources }`
