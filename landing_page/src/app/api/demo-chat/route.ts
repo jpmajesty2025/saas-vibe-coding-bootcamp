@@ -6,6 +6,22 @@ import pool from '@/lib/db/client';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const ipRequestMap = new Map<string, { count: number; windowStart: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipRequestMap.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    ipRequestMap.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) return false;
+  entry.count += 1;
+  return true;
+}
+
 const messagePartSchema = z.object({
   type: z.string(),
   text: z.string().max(2000).optional(),
@@ -59,6 +75,18 @@ async function getRelevantContext(query: string): Promise<string> {
 }
 
 export async function POST(request: Request) {
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    request.headers.get('x-real-ip') ??
+    'unknown';
+
+  if (!checkRateLimit(ip)) {
+    return Response.json(
+      { error: 'Rate limit exceeded. Max 10 requests per minute for the demo.' },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { messages } = requestSchema.parse(body);

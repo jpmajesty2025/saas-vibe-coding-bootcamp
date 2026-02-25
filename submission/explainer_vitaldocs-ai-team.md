@@ -78,4 +78,4 @@ To verify the app without creating an account:
 
 The `/demo` route uses dedicated unauthenticated API routes (`/api/demo-chat` and `/api/demo-sources`) so evaluators can test the full RAG pipeline without signing in.
 
-**Health check:** https://vitaldocs-ai.vercel.app/api/health — returns JSON with `{ status, chunkCount, sources }`
+**Health check:** https://vitaldocs-ai.vercel.app/api/health — returns JSON with `{ status, db, chunkCount, timestamp }`

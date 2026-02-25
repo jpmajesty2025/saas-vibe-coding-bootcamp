@@ -8,8 +8,8 @@ A Next.js SaaS application built during the SaaS Vibe Coding Bootcamp. VitalDocs
 
 ## What's Been Built
 
-### Landing Page (`/landing_page`)
-A polished Next.js 16 + React 19 + Tailwind CSS 4 marketing page with:
+### App (`landing_page/`)
+A polished Next.js 16 + React 19 + Tailwind CSS 4 application with:
 - **Navbar** — Animated top bar with the VitalDocs AI brand and navigation links
 - **Hero section** — Two-column layout with headline, subheadline, CTA buttons, star-rating badge, social proof strip, and a floating hero image
 
@@ -59,10 +59,12 @@ A streaming REST endpoint (`POST /api/chat`) that:
 - OpenAI API key
 
 ### Environment Variables
-Create `landing_page/.env.local`:
+Create `landing_page/.env.local` (the app root — all commands run from this directory):
 ```
 DATABASE_URL=postgresql://...
 OPENAI_API_KEY=sk-...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
 ```
 
 ### Install & Run
@@ -114,7 +116,7 @@ CDC sources currently ingested:
 - [x] `/dashboard` page — usage stats, query history, knowledge base coverage
 - [x] `/demo` public route — full RAG chat with no sign-in required (for judges/evaluators)
 - [x] `/api/demo-chat` and `/api/demo-sources` — unauthenticated API routes for demo
-- [x] `/api/health` endpoint — returns `{ status, chunkCount, sources }` for live verification
+- [x] `/api/health` endpoint — returns `{ status, db, chunkCount, timestamp }` for live verification
 - [x] Deploy to Vercel — **live at https://vitaldocs-ai.vercel.app/**
 
 ### 🟡 Near-term Polish
@@ -131,6 +133,6 @@ CDC sources currently ingested:
 
 ### 🔵 Infrastructure
 - [ ] Add error monitoring (Sentry or similar)
-- [ ] Add rate limiting to `/api/demo-chat` to prevent abuse of the unauthenticated route
+- [x] IP-based rate limiting on `/api/demo-chat` — 10 req/min per IP, 429 on breach
 - [ ] Usage metering — enforce Free tier query limits against the database
 <END_OF_CONTENT>}}]

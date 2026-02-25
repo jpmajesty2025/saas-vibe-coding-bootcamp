@@ -11,12 +11,12 @@ export async function GET() {
     return Response.json({
       status: 'ok',
       db: 'connected',
-      chunks: chunkCount,
+      chunkCount,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
     return Response.json(
-      { status: 'error', db: 'unreachable', message: String(error) },
+      { status: 'error', db: 'unreachable', chunkCount: 0, message: String(error) },
       { status: 503 }
     );
   }
