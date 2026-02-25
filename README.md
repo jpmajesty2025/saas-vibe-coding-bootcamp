@@ -99,32 +99,38 @@ CDC sources currently ingested:
 
 ## TODO
 
-### 🔴 Bugs / Data Issues
-- [ ] **Fix dead Influenza CDC URLs** — 3 sources return 404 (`antiviral-use-influenza.htm`, `clinician_guidance_ridt.htm`, `summary-recommendations.htm`). Find current CDC URLs and update `SOURCES` in `ingest.ts`
-- [ ] **Fix dead Flu Weekly View URL** — `cdc.gov/flu/weekly/index.htm` returns 404
-- [ ] **Replace placeholder social proof copy** in Hero — "5000+ Appointments / Patients booked already" is a generic template; update to match the clinical SaaS brand (e.g. CDC documents indexed count)
-
-### 🟡 Feature: Chat UI
-- [x] Build the chat interface page at `/chat`
-- [x] Wire the hero "Get Started" button → `/chat`
-- [x] Implement streaming message display with animated thinking dots
-- [x] Add citation pill badges on AI responses (`[CDC: ...]`)
-- [x] Pre-canned example queries on empty state
-- [ ] Auto-submit when clicking an example query (currently populates input, requires Send)
-
-### 🟡 Feature: Landing Page Completion
-- [ ] Wire up all Navbar links (About, Services, Doctors, Blog — or replace with product-appropriate links)
-- [ ] Wire "Watch Video" CTA button (demo video or modal)
-- [ ] Replace "Book a call" Navbar CTA with a product-relevant action (e.g. "Try It Free" → `/chat`)
-- [ ] Subheadline copy is still a generic placeholder — update to match PROPOSAL copy
-- [ ] Add Features / How It Works section below the hero
-- [ ] Add trust strip: "Indexing X pages of CDC documentation" (from PROPOSAL)
-
-### 🟢 Infrastructure / Polish
-- [ ] Add Mumps and Rubella vaccination guidance CDC pages to the corpus
-- [ ] Add CDC Influenza overview pages once URLs are resolved
-- [ ] Consider adding WHO sources to expand the knowledge base
-- [ ] Set up CI to re-run ingestion when source list changes
-- [ ] Add error monitoring (Sentry or similar)
+### ✅ Completed
+- [x] Fix dead Influenza CDC URLs — replaced 4 dead sources with 10 live HCP-facing CDC pages; corpus now at **1,155 chunks across 27 sources**
+- [x] Hero copy updated — real stats and VitalDocs-specific messaging (no more generic placeholders)
+- [x] Build chat interface at `/chat` with streaming display, thinking dots, and pre-canned example queries
+- [x] Wire hero "Get Started" → `/chat`
+- [x] Citation badges on AI responses — interactive cards showing source title + snippet
+- [x] `/api/sources` endpoint for citation lookups
+- [x] Navbar cleanup — removed dead links, real navigation (Chat, Pricing, CDC Guidelines)
+- [x] Pricing section — 3-tier (Free / Pro / Enterprise) on landing page
+- [x] Clerk authentication — Google OAuth + email, custom `/sign-in` and `/sign-up` pages
+- [x] Middleware protecting `/chat` and `/dashboard`
+- [x] Server-side `auth()` guards on `/api/chat` and `/api/sources`
+- [x] `/dashboard` page — usage stats, query history, knowledge base coverage
+- [x] `/demo` public route — full RAG chat with no sign-in required (for judges/evaluators)
+- [x] `/api/demo-chat` and `/api/demo-sources` — unauthenticated API routes for demo
+- [x] `/api/health` endpoint — returns `{ status, chunkCount, sources }` for live verification
 - [x] Deploy to Vercel — **live at https://vitaldocs-ai.vercel.app/**
+
+### 🟡 Near-term Polish
+- [ ] **Auto-submit example queries** — clicking a suggested question currently populates the input; should auto-submit
+- [ ] **Mobile hamburger menu** — Navbar collapses on small screens but has no mobile drawer yet
+- [ ] **Chat error states** — surface user-friendly error messages when the API fails or times out
+- [ ] **"Watch Demo" CTA** — wire the secondary hero button to the Loom screencast or an in-page modal
+- [ ] **Features / How It Works section** — add below the hero to improve landing page conversion
+
+### 🟢 Knowledge Base Expansion
+- [ ] Add Mumps and Rubella vaccination guidance CDC pages to the corpus
+- [ ] Add WHO sources to supplement CDC guidelines
+- [ ] Set up CI / scheduled job to re-run ingestion when CDC source URLs change
+
+### 🔵 Infrastructure
+- [ ] Add error monitoring (Sentry or similar)
+- [ ] Add rate limiting to `/api/demo-chat` to prevent abuse of the unauthenticated route
+- [ ] Usage metering — enforce Free tier query limits against the database
 <END_OF_CONTENT>}}]
