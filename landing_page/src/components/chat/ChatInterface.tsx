@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Activity, ArrowLeft, Stethoscope, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Activity, ArrowLeft, Stethoscope, ExternalLink, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 const EXAMPLE_QUERIES = [
@@ -123,6 +123,45 @@ function ThinkingDots() {
   );
 }
 
+const NO_CONTEXT_PHRASES = [
+  "I cannot answer this based on the provided clinical guidelines",
+  "No relevant clinical guidelines were found",
+];
+
+function isNoContextResponse(text: string): boolean {
+  return NO_CONTEXT_PHRASES.some((phrase) => text.includes(phrase));
+}
+
+function NoContextCard({ onSuggest }: { onSuggest: (q: string) => void }) {
+  const suggestions = [
+    "What are the symptoms of measles?",
+    "What is the MMR vaccination schedule?",
+    "How is pertussis diagnosed and treated?",
+  ];
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-slate-700">
+      <div className="flex items-center gap-2 mb-2 text-amber-700 font-medium">
+        <AlertCircle size={15} />
+        No matching CDC guidelines found
+      </div>
+      <p className="text-slate-600 text-xs mb-3">
+        This query didn&apos;t match any indexed CDC guidelines. Try rephrasing or ask about MMR, Pertussis, Influenza, or COVID-19.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {suggestions.map((s) => (
+          <button
+            key={s}
+            onClick={() => onSuggest(s)}
+            className="text-xs px-2.5 py-1 rounded-lg border border-teal-200 bg-white text-teal-700 hover:bg-teal-50 transition-colors"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ChatInterface() {
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -182,18 +221,20 @@ export default function ChatInterface() {
     );
   }
 
+  function submitQuery(query: string) {
+    if (!query.trim() || isLoading) return;
+    lastUserQueryRef.current = query.trim();
+    setActiveCitation(null);
+    sendMessage({ text: query.trim() });
+    setInput("");
+  }
+
   function handleExampleClick(query: string) {
-    setInput(query);
-    inputRef.current?.focus();
+    submitQuery(query);
   }
 
   function submit() {
-    const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
-    lastUserQueryRef.current = trimmed;
-    setActiveCitation(null);
-    sendMessage({ text: trimmed });
-    setInput("");
+    submitQuery(input);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -295,20 +336,22 @@ export default function ChatInterface() {
                     }`}
                   >
                     {message.role === "assistant" && parsedParts
-                      ? parsedParts.map((part, i) =>
-                          part.type === "citation" ? (
-                            <CitationBadge
-                              key={i}
-                              label={part.value}
-                              messageId={message.id}
-                              sources={msgSources}
-                              activeCitation={activeCitation}
-                              onToggle={handleToggleCitation}
-                            />
-                          ) : (
-                            <span key={i}>{part.value}</span>
+                      ? isNoContextResponse(textContent)
+                        ? <NoContextCard onSuggest={submitQuery} />
+                        : parsedParts.map((part, i) =>
+                            part.type === "citation" ? (
+                              <CitationBadge
+                                key={i}
+                                label={part.value}
+                                messageId={message.id}
+                                sources={msgSources}
+                                activeCitation={activeCitation}
+                                onToggle={handleToggleCitation}
+                              />
+                            ) : (
+                              <span key={i}>{part.value}</span>
+                            )
                           )
-                        )
                       : textContent}
                   </div>
                 </div>
